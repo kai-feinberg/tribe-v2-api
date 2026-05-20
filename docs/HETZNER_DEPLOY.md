@@ -61,6 +61,9 @@ docker compose up -d
 docker compose logs -f api
 ```
 
+The default Compose file binds the API to `127.0.0.1` on the VPS, so it is
+intended to be reached through an SSH tunnel rather than exposed publicly.
+
 In another shell:
 
 ```bash

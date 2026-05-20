@@ -4,7 +4,7 @@ services:
     env_file:
       - .env
     ports:
-      - "${TRIBE_PORT:-8000}:8000"
+      - "127.0.0.1:${TRIBE_PORT:-8000}:8000"
     volumes:
       - ${TRIBE_CACHE_HOST_DIR:-./cache}:/cache
       - ${TRIBE_JOBS_HOST_DIR:-./jobs}:/jobs
