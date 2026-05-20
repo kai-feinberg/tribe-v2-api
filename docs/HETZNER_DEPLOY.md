@@ -5,13 +5,15 @@ private until an auth layer exists.
 
 ## VPS
 
-Start with:
+The first proven deployment used:
 
 - Ubuntu
-- 4 vCPU
-- 8 GB RAM
+- 2 vCPU
+- 4 GB RAM
+- 8 GB swap
 
-If model loading or inference fails with memory pressure, retry on 16 GB RAM
+This is enough for one text job at a time on CPU. If model loading or inference
+fails with memory pressure, first add swap; then resize to 4 vCPU / 8 GB RAM
 before changing the architecture.
 
 ## Server Setup
@@ -61,6 +63,12 @@ docker compose up -d
 docker compose logs -f api
 ```
 
+Health check:
+
+```bash
+curl http://127.0.0.1:8000/health
+```
+
 The default Compose file binds the API to `127.0.0.1` on the VPS, so it is
 intended to be reached through an SSH tunnel rather than exposed publicly.
 
@@ -81,3 +89,9 @@ ssh -L 8000:localhost:8000 root@YOUR_SERVER_IP
 ```
 
 Then call `http://localhost:8000` from your laptop.
+
+For the first Hetzner test server:
+
+```bash
+ssh -i ~/.ssh/hetzner_tribev2 -L 8000:localhost:8000 root@204.168.145.117
+```
