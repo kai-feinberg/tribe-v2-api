@@ -17,6 +17,7 @@ WORKDIR /app
 
 COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
+RUN python -m spacy download en_core_web_lg
 
 COPY src ./src
 COPY scripts ./scripts
