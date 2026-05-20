@@ -27,6 +27,7 @@ def build_metadata(settings: Settings) -> dict:
         "features": {
             "force_cpu": settings.force_cpu,
             "text_word_timing_patch": True,
+            "text_events_enabled": settings.enable_text_events,
             "image_as_video_adapter": False,
             "video_input": False,
             "audio_input": False,

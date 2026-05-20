@@ -33,6 +33,7 @@ class Settings:
     keep_failed_inputs: bool = False
     debug_artifacts: bool = False
     fake_inference: bool = False
+    enable_text_events: bool = False
     model_repo: str = "facebook/tribev2"
     model_checkpoint: str = "best.ckpt"
 
@@ -59,6 +60,7 @@ def get_settings() -> Settings:
         keep_failed_inputs=_bool_env("TRIBE_KEEP_FAILED_INPUTS", False),
         debug_artifacts=_bool_env("TRIBE_DEBUG_ARTIFACTS", False),
         fake_inference=_bool_env("TRIBE_FAKE_INFERENCE", False),
+        enable_text_events=_bool_env("TRIBE_ENABLE_TEXT_EVENTS", False),
         model_repo=os.environ.get("TRIBE_MODEL_REPO", "facebook/tribev2"),
         model_checkpoint=os.environ.get("TRIBE_MODEL_CHECKPOINT", "best.ckpt"),
     )

@@ -78,6 +78,7 @@ def run_text_prediction(text: str, job_path: Path, settings: Settings) -> TextPr
     started = time.time()
     try:
         events = model.get_events_dataframe(text_path=str(text_path))
+        events = drop_text_events_unless_enabled(events, settings.enable_text_events)
         preds, segments = model.predict(events=events, verbose=False)
     finally:
         set_current_text(None)
@@ -91,6 +92,13 @@ def run_text_prediction(text: str, job_path: Path, settings: Settings) -> TextPr
         events_count=int(len(events)),
         elapsed_seconds=time.time() - started,
     )
+
+
+def drop_text_events_unless_enabled(events: Any, enabled: bool) -> Any:
+    if enabled or "type" not in events.columns:
+        return events
+    event_type = events["type"].astype(str).str.lower()
+    return events[event_type != "word"].reset_index(drop=True)
 
 
 def fake_text_prediction() -> TextPrediction:

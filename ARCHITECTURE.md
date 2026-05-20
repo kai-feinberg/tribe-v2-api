@@ -65,6 +65,9 @@ Decision:
 - Do not expose audio input.
 - Avoid running WhisperX on CPU.
 - Use the user's known text to create CPU-safe word timing events.
+- Drop text/word events before prediction by default because the official text
+  feature extractor uses gated Llama weights. Enable them only with
+  `TRIBE_ENABLE_TEXT_EVENTS=true` and valid Hugging Face access.
 - Reuse the `script-brain-optimizer` approach as reference: patch
   `ExtractWordsFromAudio._get_transcript_from_audio` so generated audio can be
   paired with heuristic word timings from the source text.
@@ -188,6 +191,7 @@ Suggested env vars:
 - `TRIBE_MAX_IMAGE_MB=10`
 - `TRIBE_IMAGE_STIMULUS_SECONDS=3`
 - `TRIBE_FORCE_CPU=true`
+- `TRIBE_ENABLE_TEXT_EVENTS=false`
 
 ## Output Contract
 
@@ -411,4 +415,3 @@ The next document should be a real implementation plan with:
 - API schema examples.
 - Failure modes and recovery behavior.
 - Minimal frontend integration contract.
-

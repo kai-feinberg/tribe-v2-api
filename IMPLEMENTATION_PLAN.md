@@ -24,6 +24,9 @@ visualization are intentionally deferred until the text path is proven.
 - Model/cache setup should be explicit, not hidden inside first API boot.
 - Text inference comes before image inference.
 - Raw JSON text input only for v1.
+- Text/word events are disabled by default to avoid gated Llama feature
+  extraction; generated speech/audio events are used unless
+  `TRIBE_ENABLE_TEXT_EVENTS=true`.
 - No audio/video upload endpoints in v1.
 - No generated temporary audio/video artifacts exposed by default.
 - One running job at a time, with a small in-process pending queue.
@@ -209,8 +212,9 @@ Text path:
 3. Apply CPU-safe word timing patch.
 4. Call the official TRIBE V2 text pathway as much as possible.
 5. Capture events dataframe.
-6. Run prediction.
-7. Return predictions plus event/timing metadata.
+6. Drop Word events by default unless `TRIBE_ENABLE_TEXT_EVENTS=true`.
+7. Run prediction.
+8. Return predictions plus event/timing metadata.
 
 Important constraint:
 
