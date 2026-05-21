@@ -19,6 +19,13 @@ def _int_env(name: str, default: int) -> int:
     return int(value)
 
 
+def _csv_env(name: str, default: tuple[str, ...]) -> tuple[str, ...]:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return tuple(part.strip() for part in value.split(",") if part.strip())
+
+
 @dataclass(frozen=True)
 class Settings:
     host: str = "0.0.0.0"
@@ -36,6 +43,10 @@ class Settings:
     enable_text_events: bool = False
     model_repo: str = "facebook/tribev2"
     model_checkpoint: str = "best.ckpt"
+    cors_origins: tuple[str, ...] = (
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    )
 
     @property
     def model_snapshot_dir(self) -> Path:
@@ -63,6 +74,10 @@ def get_settings() -> Settings:
         enable_text_events=_bool_env("TRIBE_ENABLE_TEXT_EVENTS", False),
         model_repo=os.environ.get("TRIBE_MODEL_REPO", "facebook/tribev2"),
         model_checkpoint=os.environ.get("TRIBE_MODEL_CHECKPOINT", "best.ckpt"),
+        cors_origins=_csv_env(
+            "TRIBE_CORS_ORIGINS",
+            ("http://localhost:5173", "http://127.0.0.1:5173"),
+        ),
     )
     settings.cache_dir.mkdir(parents=True, exist_ok=True)
     settings.jobs_dir.mkdir(parents=True, exist_ok=True)

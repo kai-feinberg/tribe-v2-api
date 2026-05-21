@@ -35,6 +35,15 @@ Text request:
 }
 ```
 
+## Browser Frontends
+
+Set `TRIBE_CORS_ORIGINS` to the comma-separated browser origins that should be
+allowed to call the API, for example:
+
+```bash
+TRIBE_CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,https://your-frontend.vercel.app
+```
+
 ## License And Use
 
 TRIBE V2 is licensed under CC BY-NC 4.0. This template is intended for private
