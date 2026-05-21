@@ -71,8 +71,9 @@ def basic_reductions(preds: np.ndarray) -> dict:
     return {
         "global_mean_abs_by_timestep": mean_abs_by_time.tolist(),
         "note": (
-            "Yeo7 and heuristic axis reductions are planned for the text MVP "
-            "output pass once the runtime produces real predictions."
+            "Atlas-backed cognitive domains and interpretive proxy axes are included. "
+            "The proxy axes are heuristic summaries, not direct emotion measurements; "
+            "Yeo7 network reductions remain a future extension."
         ),
     }
 
