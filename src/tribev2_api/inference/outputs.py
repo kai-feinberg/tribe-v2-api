@@ -6,6 +6,11 @@ from typing import Any
 
 import numpy as np
 
+from tribev2_api.inference.reductions import (
+    compute_cognitive_domains,
+    compute_interpretive_axes,
+)
+
 EXPECTED_VERTEX_COUNT = 20484
 
 
@@ -88,6 +93,8 @@ def write_result_json(
     completed_at: str | None = None,
 ) -> dict:
     artifacts = save_prediction_artifacts(job_path, preds)
+    cognitive_domains = compute_cognitive_domains(preds)
+    interpretive_axes = compute_interpretive_axes(cognitive_domains)
     result = {
         "job_id": job_id,
         "status": status,
@@ -103,8 +110,10 @@ def write_result_json(
         "mesh": model_metadata.get("brain_space", {}),
         "prediction": artifacts,
         "time": segment_times(segments),
+        "cognitive_domains": cognitive_domains,
+        "interpretive_axes": interpretive_axes,
         "network_traces": {},
-        "heuristic_axes": {},
+        "heuristic_axes": interpretive_axes.get("time_series", {}),
         "summary": basic_reductions(preds),
         "events": {
             "count": events_count,

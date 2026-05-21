@@ -22,6 +22,8 @@ class TextPrediction:
     segments: list[Any]
     events_count: int
     elapsed_seconds: float
+    total_segments: int
+    kept_segments: int
 
 
 class FakeSegment:
@@ -42,14 +44,18 @@ def _model_source(settings: Settings) -> str | Path:
     return settings.model_repo
 
 
-def load_model(settings: Settings):
+def load_model(settings: Settings, progress: ProgressCallback | None = None):
     global _MODEL
     if _MODEL is not None:
+        if progress:
+            progress("model_ready", "Model already loaded in this worker.", 18)
         return _MODEL
     configure_cpu_runtime(settings.force_cpu)
     apply_text_timing_patch()
     from tribev2 import TribeModel
 
+    if progress:
+        progress("model_loading", "Loading TRIBE V2 model into CPU memory.", 10)
     source = _model_source(settings)
     _MODEL = TribeModel.from_pretrained(
         source,
@@ -60,7 +66,15 @@ def load_model(settings: Settings):
     return _MODEL
 
 
-def run_text_prediction(text: str, job_path: Path, settings: Settings) -> TextPrediction:
+ProgressCallback = Any
+
+
+def run_text_prediction(
+    text: str,
+    job_path: Path,
+    settings: Settings,
+    progress: ProgressCallback | None = None,
+) -> TextPrediction:
     if settings.fake_inference:
         return fake_text_prediction()
 
@@ -73,12 +87,18 @@ def run_text_prediction(text: str, job_path: Path, settings: Settings) -> TextPr
     text_path = input_dir / "input.txt"
     text_path.write_text(text, encoding="utf-8")
 
-    model = load_model(settings)
+    model = load_model(settings, progress)
     set_current_text(text)
     started = time.time()
     try:
+        if progress:
+            progress("events", "Creating audio/text events from input text.", 24)
         events = model.get_events_dataframe(text_path=str(text_path))
+        if progress:
+            progress("events", f"Extracted {len(events)} raw events.", 42)
         events = drop_text_events_unless_enabled(events, settings.enable_text_events)
+        if progress:
+            progress("predicting", "Running TRIBE V2 prediction on CPU.", 58)
         preds, segments = model.predict(events=events, verbose=False)
     finally:
         set_current_text(None)
@@ -86,12 +106,40 @@ def run_text_prediction(text: str, job_path: Path, settings: Settings) -> TextPr
     if not isinstance(preds, np.ndarray):
         preds = np.asarray(preds)
 
+    total_segments = estimate_total_segments(segments)
+    kept_segments = int(preds.shape[0])
+    if progress:
+        progress(
+            "artifact_writing",
+            f"Predicted {kept_segments} / {total_segments} segments.",
+            88,
+            processed_segments=kept_segments,
+            total_segments=total_segments,
+            kept_segments=kept_segments,
+        )
+
     return TextPrediction(
         preds=preds,
         segments=list(segments),
         events_count=int(len(events)),
         elapsed_seconds=time.time() - started,
+        total_segments=total_segments,
+        kept_segments=kept_segments,
     )
+
+
+def estimate_total_segments(segments: list[Any]) -> int:
+    if not segments:
+        return 0
+    starts = [
+        float(getattr(segment, "start", 0.0) or 0.0)
+        + float(getattr(segment, "offset", 0.0) or 0.0)
+        for segment in segments
+    ]
+    durations = [float(getattr(segment, "duration", 1.0) or 1.0) for segment in segments]
+    stop = max(start + duration for start, duration in zip(starts, durations, strict=False))
+    tr = max(min(durations), 1e-6)
+    return max(len(segments), int(round(stop / tr)))
 
 
 def drop_text_events_unless_enabled(events: Any, enabled: bool) -> Any:
@@ -110,4 +158,6 @@ def fake_text_prediction() -> TextPrediction:
         segments=segments,
         events_count=7,
         elapsed_seconds=0.01,
+        total_segments=3,
+        kept_segments=3,
     )

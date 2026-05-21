@@ -14,6 +14,7 @@ from tribev2_api.jobs import (
     job_dir,
     load_job,
     save_job,
+    update_progress,
     utc_now,
 )
 from tribev2_api.metadata import build_metadata
@@ -65,12 +66,35 @@ class JobQueue:
 
         record.status = "running"
         record.started_at = utc_now()
+        record.phase = "starting"
+        record.phase_detail = "Worker picked up the job."
+        record.progress_percent = 3
         save_job(self.settings, record)
         append_log(self.settings, record.job_id, "started text inference")
 
         path = job_dir(self.settings, record.job_id)
         try:
-            prediction = run_text_prediction(payload.text, path, self.settings)
+            def progress(phase: str, phase_detail: str, progress_percent: int, **kwargs):
+                update_progress(
+                    self.settings,
+                    record.job_id,
+                    phase=phase,
+                    phase_detail=phase_detail,
+                    progress_percent=progress_percent,
+                    **kwargs,
+                )
+
+            prediction = run_text_prediction(payload.text, path, self.settings, progress=progress)
+            update_progress(
+                self.settings,
+                record.job_id,
+                phase="reductions",
+                phase_detail="Computing cognitive domains and interpretive axes.",
+                progress_percent=92,
+                processed_segments=prediction.kept_segments,
+                total_segments=prediction.total_segments,
+                kept_segments=prediction.kept_segments,
+            )
             result = write_result_json(
                 path,
                 job_id=record.job_id,
@@ -88,6 +112,12 @@ class JobQueue:
             record.status = "completed"
             record.completed_at = result["completed_at"]
             record.artifacts = result["artifacts"]
+            record.phase = "completed"
+            record.phase_detail = "Result ready."
+            record.progress_percent = 100
+            record.processed_segments = prediction.kept_segments
+            record.total_segments = prediction.total_segments
+            record.kept_segments = prediction.kept_segments
             save_job(self.settings, record)
             append_log(
                 self.settings,
@@ -98,6 +128,8 @@ class JobQueue:
             record.status = "failed"
             record.completed_at = utc_now()
             record.error = str(exc)
+            record.phase = "failed"
+            record.phase_detail = str(exc)
             save_job(self.settings, record)
             append_log(self.settings, record.job_id, f"failed: {exc}")
             append_log(self.settings, record.job_id, traceback.format_exc())

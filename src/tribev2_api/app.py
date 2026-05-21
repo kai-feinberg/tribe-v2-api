@@ -7,9 +7,11 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from tribev2_api.config import get_settings
+from tribev2_api.inference.mesh import fsaverage5_mesh_path
 from tribev2_api.jobs import (
     create_job,
     load_job,
+    read_logs_tail,
     preds_bin_path,
     result_path,
     save_job,
@@ -52,6 +54,16 @@ def metadata() -> dict:
     return build_metadata(settings)
 
 
+@app.get("/mesh/fsaverage5.bin")
+def get_mesh():
+    path = fsaverage5_mesh_path(settings)
+    return FileResponse(
+        path,
+        media_type="application/octet-stream",
+        filename="fsaverage5.bin",
+    )
+
+
 @app.post("/predict/text", status_code=202)
 def predict_text(request: TextPredictionRequest) -> dict:
     text = request.text.strip()
@@ -79,7 +91,9 @@ def get_job(job_id: str) -> dict:
     record = load_job(settings, job_id)
     if record is None:
         raise HTTPException(status_code=404, detail="Job not found.")
-    return record.to_public_dict()
+    data = record.to_public_dict()
+    data["logs_tail"] = read_logs_tail(settings, job_id)
+    return data
 
 
 @app.get("/jobs/{job_id}/result.json")

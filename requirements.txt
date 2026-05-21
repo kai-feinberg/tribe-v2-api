@@ -9,6 +9,8 @@ numpy<3
 pandas
 soundfile
 huggingface_hub
+nibabel
+nilearn
 torch
 torchvision
 tribev2 @ git+https://github.com/facebookresearch/tribev2.git

@@ -31,6 +31,12 @@ class JobRecord:
     completed_at: str | None = None
     error: str | None = None
     artifacts: dict = field(default_factory=dict)
+    phase: str = "queued"
+    phase_detail: str = "Waiting for the worker."
+    progress_percent: int = 0
+    processed_segments: int | None = None
+    total_segments: int | None = None
+    kept_segments: int | None = None
 
     def to_public_dict(self) -> dict:
         data = asdict(self)
@@ -93,8 +99,42 @@ def load_job(settings: Settings, job_id: str) -> JobRecord | None:
     return JobRecord(**data)
 
 
+def update_progress(
+    settings: Settings,
+    job_id: str,
+    *,
+    phase: str,
+    phase_detail: str,
+    progress_percent: int,
+    processed_segments: int | None = None,
+    total_segments: int | None = None,
+    kept_segments: int | None = None,
+) -> None:
+    record = load_job(settings, job_id)
+    if record is None:
+        return
+    record.phase = phase
+    record.phase_detail = phase_detail
+    record.progress_percent = max(0, min(100, int(progress_percent)))
+    if processed_segments is not None:
+        record.processed_segments = processed_segments
+    if total_segments is not None:
+        record.total_segments = total_segments
+    if kept_segments is not None:
+        record.kept_segments = kept_segments
+    save_job(settings, record)
+    append_log(settings, job_id, f"{phase}: {phase_detail}")
+
+
 def append_log(settings: Settings, job_id: str, message: str) -> None:
     path = logs_path(settings, job_id)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as handle:
         handle.write(f"[{utc_now()}] {message}\n")
+
+
+def read_logs_tail(settings: Settings, job_id: str, line_count: int = 12) -> list[str]:
+    path = logs_path(settings, job_id)
+    if not path.exists():
+        return []
+    return path.read_text(encoding="utf-8").splitlines()[-line_count:]
